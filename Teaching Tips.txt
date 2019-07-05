@@ -1,0 +1,3 @@
+Get an asset pack together that can be used to create a variety of different prototypes. Like an FPS / TPS controller, some cool particle systems, enemy, player and prop models, and maybe some neat shaders and basic materials.
+
+With that, you could then show them how to customise stuff. Probuilder, terrains, basic mechanics (grapple hook, enemy AI, booby traps, grenades, etc), the animation system, fun physics functions like addExplosion, or even some level design / basic lighting and graphics practices.

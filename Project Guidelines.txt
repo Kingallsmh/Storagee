@@ -1,0 +1,8 @@
+-Especially when making UI, DO NOT DO IT IN FREE ASPECT. Unless you are intentionally wanting to resize on the fly, find an aspect ratio or resolution to work with first. So when you start a project, change from Free Aspect.
+*Example of what can happen: Original Evrisia was made in Free Aspect and one the largest monitor in the studio. When the program was moved to another computer, most of the UI was inaccessible (out of the screen).
+
+-If variables are no longer needed or used, remove them from the script. Any extra lines or words adds to confusion about what is/isn't used.
+
+-Try to keep lists from iterated through every frame (I.E. instead of updating everything in a list every frame, update when something has changed)
+
+-Comment lots, especially when your code is getting out of readable territory. If someone can't look at a line and understand hat's going on, it needs to be commented or the line itself needs to be broken down.

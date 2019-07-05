@@ -1,0 +1,55 @@
+
+Although there's already an accepted answer, I think there are some additional details worth covering.
+
+Using Velocity
+
+When you set velocity, you're overriding absolutely everything else that might affect that object's movement. In some situations this is desirable, such as setting the initial velocity of a bullet once at the moment it's fired, as in trojanfoe's example. Just be wary, because when used in the wrong situations it can cause issues:
+
+If multiple sources/scripts try to modify the same Rigidbody's velocity by setting it directly (ie. body.velocity = foo), then whichever one runs last wins, and the others have zero effect. This can lead to order of update bugs, in particular causing entities to hover or fall slowly (because downward acceleration due to gravity gets overridden before it can accumulate)
+
+If you're setting velocity every frame, collisions with other objects can be a bit weird. It's as though your object is being propelled by an engine with infinite torque - no matter how much velocity it loses on an impact, it's back up to top speed on the very next physics step, and its velocity isn't deflected away from the impact. This can lead to launching objects you collide with, or small objects being able to push huge ones much more easily than it seems like they should, or objects sliding slowly along static barriers instead of deflecting away/along them.
+
+Both of these effects can be desired sometimes. For example, when I'm making Kinect games and I want the player's virtual avatar's limbs to be able to interact with the physics scene, I usually move those bodies using direct velocity setting. Because the player's actual hand is in a known place and didn't slow down from collision with that virtual object, their virtual hand needs to do the same to stay in alignment, so in this case we actually want to override all other physics effects to get it there.
+
+AddForce and Friends
+
+AddForce and similar helper functions, by contrast, are made to cooperate with everything else going on in the physics world. If multiple sources/scripts AddForce to a Rigidbody, all of those effects get added together to create a net change in the object's movement (which, depending on how it's calculated, may also be order-independent). This helps avoid one script completely stomping some other physics effect.
+
+AddForce comes in four flavours by specifying the optional ForceMode parameter, which are useful for different things:
+
+ForceMode       |   Use
+-----------------------------------------------------------------------
+Force (default) |   Accelerate an object over 1 time step, based on its mass.
+                |   Units: Newtons = kg * m/s^2
+                |
+Acceleration    |   Accelerate an object over 1 time step, ignoring its mass. (like gravity)
+                |   Units: m/s^2
+                |
+Impulse         |   Instantaneously propel an object, based on its mass
+                |   Units: N * s = kg * m/s
+                |
+VelocityChange  |   Instantaneously propel an object, ignoring its mass
+                |   (like body.velocity = foo, except multiple scripts can stack)
+                |   Units:  m/s
+If you're trying to model a continuous push over time (eg. something you're applying every FixedUpdate), like a car driving or a rocket burning or a gravity well pulling, you want Force or Acceleration. (Depending on whether you want heavy objects to accelerate slower)
+
+If you're modelling a sudden, sharp change in motion, like firing a bullet, recoiling from an explosion, or bouncing off a barrier, then you more likely want Impulse or VelocityChange.
+
+Using AddForce helps you achieve more physical realism, but it can also require that you spend more time thinking through the physics of your behaviour. For instance, if you want your body to have a finite acceleration up to a target speed, so that it reacts more realistically to collisions than setting the velocity every frame, you'll probably want a calculation similar to this helper function:
+
+public static void AccelerateTo(this Rigidbody body, Vector3 targetVelocity, float maxAccel)
+{
+    Vector3 deltaV = targetVelocity - body.velocity;
+    Vector3 accel = deltaV/Time.deltaTime;
+
+    if(accel.sqrMagnitude > maxAccel * maxAccel)
+        accel = accel.normalized * maxAccel;
+
+    body.AddForce(accel, ForceMode.Acceleration);
+}
+The reason I call all of these "helper functions" is that technically you could achieve all the same ends with:
+
+ body.velocity += suitablyCalculatedDeltaV;
+(I think. It's possible Unity's PhysX/Box2D-based physics solvers buffer changes through AddForce separately, but I haven't seen obvious consequences of this)
+
+So at the end of the day, what these functions really get us is clarity of intent. When I want to apply a gradual force, I don't need to remember to multiply my deltaV by Time.deltaTime and divide by mass, I just say I want ForceMode.Force and it's handled in a correct & consistent way. And when I or someone else comes to iterate on my code later, it's immediately clear what I meant, without needing to decode the time and mass calculations to figure it out.
